@@ -35,28 +35,35 @@ class Chat:
         self.loginWindow.destroy()
         self.port = 9999
         self.clients = []
-        tServer = threading.Thread(target=self.setServer, args=(q, ), daemon=True)
-        tServer.start()
+        #tServer = threading.Thread(target=self.setNameServer, args=(q, ), daemon=True)
+        nameServer = threading.Thread(target=self.setNameServer, daemon=True)
+        nameServer.start()
+        msgServer = threading.Thread(target=self.setMsgServer, args=(q, ), daemon=True)
+        msgServer.start()
         ipv4 = self.findIPandMask()
         self.findClients(ipv4)
         self.createWindow()
 
-    def setServer(self, q):
+    def setNameServer(self):
         self.chatHistory = None
         serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         serverSocket.bind((self.host, self.port))
         serverSocket.listen(5)
         print ('server socket listening')
-
         while True:
             clientSocket, addr = serverSocket.accept()
             print ("Got a connection from %s" % str(addr))
-            clientSocket.send(self.name.encode('ascii'))
-            try:
-                
-                msg = clientSocket.recv(1024).decode('ascii')
-                #if msg:
-                
+            clientSocket.send(self.name.encode('ascii'))            
+            clientSocket.close()
+
+    def setMsgServer(self, q, port = 9998):
+        serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        serverSocket.bind((self.host, port))
+        serverSocket.listen(5)
+        while True:
+            clientSocket, addr = serverSocket.accept()
+            try:            
+                msg = clientSocket.recv(1024).decode('ascii')            
                 if self.chatHistory is not None:
                     print ('mesg received on Server:' + msg)
                     try:
@@ -68,7 +75,6 @@ class Chat:
                 #clientSocket.send(self.nickname.encode('ascii'))
             except:
                 pass
-            clientSocket.close()
 
     def findIPandMask(self):
         os = platform.system()
@@ -100,7 +106,7 @@ class Chat:
         return ipv4
 
     def findClients(self, ipv4):
-        net4 = ipaddress.ip_interface(ipv4)
+        net4 = ipaddress.ip_interface(ipv4.split()[0])
         port = 9999
         for host in net4.network.hosts():
             try:
@@ -122,17 +128,19 @@ class Chat:
 
         print ('clients found: ', [c.IP for c in self.clients])
 
-    def sendMessageToServer(self, msg, dest, port=9999):
+    def sendMessageToServer(self, msg, dest, port=9998):
         if dest is None or dest == []:
             print('must select a contact')
             return
         for d in dest:
             try:
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.settimeout(0.1)
                 s.connect((d, port))
                 s.send(msg.encode('ascii'))
                 s.close()
-            except:
+            except Exception as e:
+                print ('error sending mesg: ', e)
                 continue
             
     def sendMessage(self, event):
