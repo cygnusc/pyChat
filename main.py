@@ -32,23 +32,25 @@ class Chat:
         
     def checkIn(self, event):
         global q
+        global qClients
         self.name = self.nickname.get()
         print ('nickname selected: ' + self.name)
         self.loginWindow.focus()
         self.loginWindow.destroy()
         self.port = 9999
         self.clients = []
+        self.chatClients = None
         #tServer = threading.Thread(target=self.setNameServer, args=(q, ), daemon=True)
         nameServer = threading.Thread(target=self.setNameServer, daemon=True)
         nameServer.start()
-        msgServer = threading.Thread(target=self.setMsgServer, args=(q, ), daemon=True)
+        msgServer = threading.Thread(target=self.setMsgServer, args=(q, qClients,), daemon=True)
         msgServer.start()
         ipv4 = self.findIPandMask()
         self.findClients(ipv4)
         self.createWindow()
 
     def setNameServer(self):
-        self.chatHistory = None
+        self.chatHistory = None        
         serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         serverSocket.bind((self.host, self.port))
         serverSocket.listen(5)
@@ -59,8 +61,9 @@ class Chat:
             print ("Got a connection from %s" % str(addr))
             clientSocket.send(self.name.encode('utf-8'))            
             clientSocket.close()
+            #self.refreshClients()
 
-    def setMsgServer(self, q, port = 9998):
+    def setMsgServer(self, q, qClients, port = 9998):
         serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         serverSocket.bind((self.host, port))
         serverSocket.listen(5)
@@ -74,6 +77,8 @@ class Chat:
                     try:
                         #self.chatHistory.insert(END, msg)
                         q.put(msg)
+                        print('addr: ', addr)
+                        qClients.put(Client(addr[0], msg.split(':')[0]))
                         #time.sleep(0.01)
                     except Exception as e:
                         print ('something wrong: ', str(e))
@@ -117,7 +122,7 @@ class Chat:
             try:
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
 
-                s.settimeout(0.02)
+                s.settimeout(0.01)
                 s.connect((str(host), port))
                 print('find active host:', str(host), '!!!!!!!!!!!!!!!!!!')
                 
@@ -174,13 +179,14 @@ class Chat:
 
     def refreshClients(self):
         print ('clients refreshed')
-        self.chatClients.delete(0, END)
-        ipv4 = self.findIPandMask()
-        self.clients = []
-        self.findClients(ipv4)
-        for i in range(len(self.clients)):
-            self.chatClients.insert(i, self.clients[i].nickname + ' @ ' + self.clients[i].IP)
-        self.chatClients.select_set(0)
+        if self.chatClients is not None:
+            self.chatClients.delete(0, END)
+            ipv4 = self.findIPandMask()
+            self.clients = []
+            self.findClients(ipv4)
+            for i in range(len(self.clients)):
+                self.chatClients.insert(i, self.clients[i].nickname + ' @ ' + self.clients[i].IP)
+            self.chatClients.select_set(0)
 
     def readMessage(self):
         global q
@@ -195,6 +201,27 @@ class Chat:
             except Exception as e:
                 break
         self.root.after(1, self.readMessage)
+
+    def updateClients(self):
+        global qClients
+        while True:
+            try:
+                time.sleep(0.01)
+                client = qClients.get_nowait()
+                print ('client.nickname = ', client.nickname)
+            
+                print ('client.ip = ', client.IP)
+                print ('current clients = ', [c.IP for c in self.clients])
+                if client.IP not in [c.IP for c in self.clients]:
+                    self.clients.append(client)
+                    self.chatClients.delete(0, END)
+                    for i in range(len(self.clients)):
+                        self.chatClients.insert(i, self.clients[i].nickname + ' @ ' + self.clients[i].IP)
+                    self.chatClients.select_set(0)
+            except Exception as e:
+                #print ('something happened in updateClients()', str(e))
+                break
+        self.root.after(500, self.updateClients)
 
     def createWindow(self):
         self.root = Tk()
@@ -225,7 +252,9 @@ class Chat:
         self.chatClients.select_set(0)
         Button(clientFrame, text='Refresh', command=self.refreshClients).grid(row=1, column=0, sticky=W)
         self.root.after(1, self.readMessage)
+        self.root.after(500, self.updateClients)
 
+qClients = queue.Queue()
 q = queue.Queue()
 c = Chat()
 mainloop()
