@@ -31,7 +31,7 @@ class Chat:
         myip.grid(row=1, sticky=E+W)
         
     def checkIn(self, event):
-        global q
+        global qMsg
         global qClients
         self.name = self.nickname.get()
         print ('nickname selected: ' + self.name)
@@ -40,10 +40,10 @@ class Chat:
         self.port = 9999
         self.clients = []
         self.chatClients = None
-        #tServer = threading.Thread(target=self.setNameServer, args=(q, ), daemon=True)
+        #tServer = threading.Thread(target=self.setNameServer, args=(qMsg, ), daemon=True)
         nameServer = threading.Thread(target=self.setNameServer, daemon=True)
         nameServer.start()
-        msgServer = threading.Thread(target=self.setMsgServer, args=(q, qClients,), daemon=True)
+        msgServer = threading.Thread(target=self.setMsgServer, args=(qMsg, qClients,), daemon=True)
         msgServer.start()
         ipv4 = self.findIPandMask()
         self.findClients(ipv4)
@@ -63,7 +63,7 @@ class Chat:
             clientSocket.close()
             #self.refreshClients()
 
-    def setMsgServer(self, q, qClients, port = 9998):
+    def setMsgServer(self, qMsg, qClients, port = 9998):
         serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         serverSocket.bind((self.host, port))
         serverSocket.listen(5)
@@ -76,7 +76,7 @@ class Chat:
                     print ('mesg received on Server:' + msg)
                     try:
                         #self.chatHistory.insert(END, msg)
-                        q.put(msg)
+                        qMsg.put(msg)
                         print('addr: ', addr)
                         qClients.put(Client(addr[0], msg.split(':')[0]))
                         #time.sleep(0.01)
@@ -154,7 +154,7 @@ class Chat:
                 continue
             
     def sendMessage(self, event):
-        global q
+        global qMsg
         if self.textBox.get() == "":
             return
         msg = self.name + ": " + self.textBox.get() + "\n"
@@ -172,7 +172,7 @@ class Chat:
         self.chatHistory.insert(END, msg) 
         self.chatHistory.see(END)
         self.chatHistory.configure(state='disabled')
-        #print ('queue: ', q)        
+        #print ('queue: ', qMsg)        
 
     def clearMessage(self):
         self.textBox.delete(0, 'end')
@@ -189,11 +189,11 @@ class Chat:
             self.chatClients.select_set(0)
 
     def readMessage(self):
-        global q
+        global qMsg
         while True:
             try:
                 time.sleep(0.01)
-                msg = q.get_nowait()
+                msg = qMsg.get_nowait()
                 self.chatHistory.configure(state='normal')
                 self.chatHistory.insert(END, msg)
                 self.chatHistory.see(END)
@@ -255,6 +255,6 @@ class Chat:
         self.root.after(500, self.updateClients)
 
 qClients = queue.Queue()
-q = queue.Queue()
+qMsg = queue.Queue()
 c = Chat()
 mainloop()
