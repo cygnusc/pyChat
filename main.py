@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import socket
 import platform
 import ipaddress
@@ -51,9 +54,10 @@ class Chat:
         serverSocket.listen(5)
         print ('server socket listening')
         while True:
+            time.sleep(0.01)
             clientSocket, addr = serverSocket.accept()
             print ("Got a connection from %s" % str(addr))
-            clientSocket.send(self.name.encode('ascii'))            
+            clientSocket.send(self.name.encode('utf-8'))            
             clientSocket.close()
 
     def setMsgServer(self, q, port = 9998):
@@ -61,9 +65,10 @@ class Chat:
         serverSocket.bind((self.host, port))
         serverSocket.listen(5)
         while True:
+            time.sleep(0.01)
             clientSocket, addr = serverSocket.accept()
             try:            
-                msg = clientSocket.recv(1024).decode('ascii')            
+                msg = clientSocket.recv(1024).decode('utf-8')            
                 if self.chatHistory is not None:
                     print ('mesg received on Server:' + msg)
                     try:
@@ -72,7 +77,7 @@ class Chat:
                         #time.sleep(0.01)
                     except Exception as e:
                         print ('something wrong: ', str(e))
-                #clientSocket.send(self.nickname.encode('ascii'))
+                #clientSocket.send(self.nickname.encode('utf-8'))
             except:
                 pass
 
@@ -118,8 +123,8 @@ class Chat:
                 
                 tm = s.recv(1000) # Receive no more than 1024 bytes # why receive nothing here?
                 print ('trying receiving tm')
-                nick = tm.decode('ascii')
-                print("The mesg got from the server is %s" % tm.decode('ascii'))
+                nick = tm.decode('utf-8')
+                print("The mesg got from the server is %s" % tm.decode('utf-8'))
                 if str(host) not in [c.IP for c in self.clients]:
                     self.clients.append(Client(str(host), nick))
                 s.close()
@@ -137,7 +142,7 @@ class Chat:
                 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 s.settimeout(0.1)
                 s.connect((d, port))
-                s.send(msg.encode('ascii'))
+                s.send(msg.encode('utf-8'))
                 s.close()
             except Exception as e:
                 print ('error sending mesg: ', e)
@@ -181,6 +186,7 @@ class Chat:
         global q
         while True:
             try:
+                time.sleep(0.01)
                 msg = q.get_nowait()
                 self.chatHistory.configure(state='normal')
                 self.chatHistory.insert(END, msg)
