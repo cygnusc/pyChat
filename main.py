@@ -20,6 +20,7 @@ class Chat:
         self.loginWindow = Tk()
         self.loginWindow.title("PyChat")
         self.loginWindow.bind('<Return>', self.checkIn)
+        self.loginWindow.focus_force()
         checkInFrame = LabelFrame(self.loginWindow, \
                                   text="Enter your nickname", padx=5, pady=5)
         checkInFrame.pack(padx=10, pady=10)
@@ -35,7 +36,7 @@ class Chat:
         global qClients
         self.name = self.nickname.get()
         print ('nickname selected: ' + self.name)
-        self.loginWindow.focus()
+        
         self.loginWindow.destroy()
         self.port = 9999
         self.clients = []
