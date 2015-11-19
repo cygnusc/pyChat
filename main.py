@@ -40,7 +40,6 @@ class Chat:
         self.port = 9999
         self.clients = []
         self.chatClients = None
-        #tServer = threading.Thread(target=self.setNameServer, args=(qMsg, ), daemon=True)
         nameServer = threading.Thread(target=self.setNameServer, daemon=True)
         nameServer.start()
         msgServer = threading.Thread(target=self.setMsgServer, args=(qMsg, qClients,), daemon=True)
@@ -53,7 +52,7 @@ class Chat:
         self.chatHistory = None        
         serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         serverSocket.bind((self.host, self.port))
-        serverSocket.listen(5)
+        serverSocket.listen(256)
         print ('server socket listening')
         while True:
             time.sleep(0.01)
@@ -66,7 +65,7 @@ class Chat:
     def setMsgServer(self, qMsg, qClients, port = 9998):
         serverSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         serverSocket.bind((self.host, port))
-        serverSocket.listen(5)
+        serverSocket.listen(256)
         while True:
             time.sleep(0.01)
             clientSocket, addr = serverSocket.accept()
@@ -115,19 +114,43 @@ class Chat:
         print (ipv4)
         return ipv4
 
+    def checkConnection(self, host, port):
+        global qClients
+        try:
+            # print ('trying ', str(host))
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
+            s.settimeout(0.1)
+            s.connect((str(host), port))
+            print('find active host:', str(host), '!!!!!!!!!!!!!!!!!!')
+            
+            tm = s.recv(1000) # Receive no more than 1024 bytes # why receive nothing here?
+            nick = tm.decode('utf-8')
+            print("The mesg got from the server is %s" % tm.decode('utf-8'))
+            if str(host) not in [c.IP for c in self.clients]:
+                print ('#trying to append# ', str(host))
+                #self.clients.append(Client(str(host), nick))
+                qClients.put(Client(str(host), nick))
+            s.close()
+        except:
+            pass
+        
+
     def findClients(self, ipv4):
         net4 = ipaddress.ip_interface(ipv4.split()[0])
         port = 9999
-        for host in net4.network.hosts():
-            try:
-                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
 
-                s.settimeout(0.01)
+        for host in net4.network.hosts():
+            t = threading.Thread(target=self.checkConnection, args=(str(host), port), daemon=True)
+            t.start()
+            '''
+            try:
+                # print ('trying ', str(host))
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
+                s.settimeout(0.1)
                 s.connect((str(host), port))
                 print('find active host:', str(host), '!!!!!!!!!!!!!!!!!!')
                 
                 tm = s.recv(1000) # Receive no more than 1024 bytes # why receive nothing here?
-                print ('trying receiving tm')
                 nick = tm.decode('utf-8')
                 print("The mesg got from the server is %s" % tm.decode('utf-8'))
                 if str(host) not in [c.IP for c in self.clients]:
@@ -135,6 +158,7 @@ class Chat:
                 s.close()
             except:
                 continue
+            '''
 
         print ('clients found: ', [c.IP for c in self.clients])
 
