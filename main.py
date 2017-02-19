@@ -259,7 +259,7 @@ class Chat:
         #chatFrame
         self.chatHistory = Text(chatFrame, bg='grey', height=10, width=40, state=DISABLED)
         self.chatHistory.grid(row=0, column=0, sticky=W+N+S)
-#this is a comment
+# this is a longgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg comment
 
         self.textBox = Entry(chatFrame)
         self.textBox.grid(row=1, sticky=E+W)
