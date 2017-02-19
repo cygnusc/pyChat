@@ -25,3 +25,4 @@ self.host = socket.gethostbyname(socket.gethostname())
 
 这个project还遇到的另一个尚未解决的问题。本来是想写两个不同的类，chatWindow和chatService，一个提供窗体，一个提供消息服务。结果却弄巧成拙的互相交流信息（比如msg和client）极为不便，因为互相不能调用对方的子函数。还想写一个Singleton类，也没能解决这个问题。这里就说明自己design pattern上面的欠缺了。最后把所有子函数写到同一个类Chat了事。
 
+<EOF>
